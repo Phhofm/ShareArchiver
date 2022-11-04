@@ -1,0 +1,211 @@
+Before:
+Original Size: 53134726
+Archive Size: 11376640
+Compression Ratio: 4.670511328476597
+Program Execution Time (PET): 267.58 seconds
+
++ Precompress:
+Original Size: 53134726
+Archive Size: 10096640
+Compression Ratio: 5.262614691620183
+Program Execution Time (PET): 493.46 seconds
+
++ Precompress + SREP:
+Original Size: 53134726
+Archive Size: 10127360
+Compression Ratio: 5.2466512496840245
+Program Execution Time (PET): 370.96 seconds
+
++ Precompress + Recompress (tarred files):
+Original Size: 53134726
+Archive Size: 10106880
+Compression Ratio: 5.257282761841439
+Program Execution Time (PET): 532.42 seconds
+
+
+-- full outputs
+
+Before:
+
+$ ./share -lvl 2 compress ./maximumcompressioncorpus ./maximumcompressioncorpus
+Share Archiver Version 0.1 by Philip Hofmann
+This is a Linux application, tested and developed on Ubuntu 20.04.3 LTS
+Compressing with level 2
+Start process to create {output_path}.share
+Strong Compression Profile
+Compressors used: zlib, bz2, xz, gz, zst, ppmd, lz4, brotli, lzham, zopfli, lzt, glza, balz, bsc and csa with strongest compression method
+Compressing File 1 of 10 - ohs.doc
+4168192 --> 774097 ohs.doc.lzt
+Compressing File 2 of 10 - world95.txt
+2988578 --> 463980 world95.txt.bsc
+Compressing File 3 of 10 - A10.jpg
+842468 --> 826116 A10.jpg.bsc
+Compressing File 4 of 10 - FlashMX.pdf
+4526946 --> 3687867 FlashMX.pdf.brotli
+Compressing File 5 of 10 - MSO97.DLL
+3782416 --> 1716477 MSO97.DLL.lzt
+Compressing File 6 of 10 - vcfiu.hlp
+4121418 --> 604249 vcfiu.hlp.lzt
+Compressing File 7 of 10 - rafale.bmp
+4149414 --> 776514 rafale.bmp.bsc
+Compressing File 8 of 10 - english.dic
+4067439 --> 751405 english.dic.lzt
+Compressing File 9 of 10 - FP.LOG
+20617071 --> 466002 FP.LOG.glza
+Compressing File 10 of 10 - AcroRd32.exe
+3870784 --> 1284245 AcroRd32.exe.lzt
+Original Size: 53134726
+Archive Size: 11376640
+Compression Ratio: 4.670511328476597
+Program Execution Time (PET): 267.58 seconds
+
+Precompress:
+
+python3 share.py -lvl 2 compress maximumcompression maximumcompression
+Share Archiver Version 0.1 by Philip Hofmann
+This is a Linux application, tested and developed on Ubuntu 20.04.3 LTS
+Compressing with level 2
+Start process to create {output_path}.share
+Strong Compression Profile
+Compressors used: zlib, bz2, xz, gz, zst, ppmd, lz4, brotli, lzham, zopfli, lzt, glza, balz, bsc and csa with strongest compression method
+Precompressing Files with Precomp
+Precompressing File 1 of 10
+Precompressing File 2 of 10
+Precompressing File 3 of 10
+Precompressing File 4 of 10
+Precompressing File 5 of 10
+Precompressing File 6 of 10
+Precompressing File 7 of 10
+Precompressing File 8 of 10
+Precompressing File 9 of 10
+Precompressing File 10 of 10
+Compressing File 1 of 10 - FlashMX.pdf.pcf
+26936513 --> 2585509 FlashMX.pdf.pcf.lzt
+Compressing File 2 of 10 - rafale.bmp.pcf
+4149437 --> 776566 rafale.bmp.pcf.bsc
+Compressing File 3 of 10 - world95.txt.pcf
+2988602 --> 464020 world95.txt.pcf.bsc
+Compressing File 4 of 10 - ohs.doc.pcf
+1453728 --> 673480 ohs.doc.pcf.xz
+Compressing File 5 of 10 - english.dic.pcf
+4067463 --> 751437 english.dic.pcf.lzt
+Compressing File 6 of 10 - FP.LOG.pcf
+20617090 --> 466064 FP.LOG.pcf.glza
+Compressing File 7 of 10 - AcroRd32.exe.pcf
+3871031 --> 1301141 AcroRd32.exe.pcf.csa
+Compressing File 8 of 10 - A10.jpg.pcf
+673220 --> 673225 A10.jpg.pcf.brotli
+Compressing File 9 of 10 - MSO97.DLL.pcf
+3773138 --> 1770088 MSO97.DLL.pcf.csa
+Compressing File 10 of 10 - vcfiu.hlp.pcf
+4121494 --> 604865 vcfiu.hlp.pcf.lzt
+Original Size: 53134726
+Archive Size: 10096640
+Compression Ratio: 5.262614691620183
+Program Execution Time (PET): 493.46 seconds
+
+
+Precompress + SREP:
+
+python3 share.py -lvl 2 compress maximumcompression maximumcompression
+Share Archiver Version 0.1 by Philip Hofmann
+This is a Linux application, tested and developed on Ubuntu 20.04.3 LTS
+Compressing with level 2
+Start process to create {output_path}.share
+Strong Compression Profile
+Compressors used: zlib, bz2, xz, gz, zst, ppmd, lz4, brotli, lzham, zopfli, lzt, glza, balz, bsc and csa with strongest compression method
+Precompressing Files with Precomp
+Precompressing File 1 of 10
+Precompressing File 2 of 10
+Precompressing File 3 of 10
+Precompressing File 4 of 10
+Precompressing File 5 of 10
+Precompressing File 6 of 10
+Precompressing File 7 of 10
+Precompressing File 8 of 10
+Precompressing File 9 of 10
+Precompressing File 10 of 10
+Further Precompressing Files with SREP
+SREP-ing File 1 of 10
+SREP-ing File 2 of 10
+SREP-ing File 3 of 10
+SREP-ing File 4 of 10
+SREP-ing File 5 of 10
+SREP-ing File 6 of 10
+SREP-ing File 7 of 10
+SREP-ing File 8 of 10
+SREP-ing File 9 of 10
+SREP-ing File 10 of 10
+Compressing File 1 of 10 - vcfiu.hlp.pcf.srep
+3833070 --> 605845 vcfiu.hlp.pcf.srep.lzt
+Compressing File 2 of 10 - FP.LOG.pcf.srep
+20616762 --> 465875 FP.LOG.pcf.srep.glza
+Compressing File 3 of 10 - world95.txt.pcf.srep
+2987202 --> 464192 world95.txt.pcf.srep.bsc
+Compressing File 4 of 10 - ohs.doc.pcf.srep
+1359672 --> 673540 ohs.doc.pcf.srep.xz
+Compressing File 5 of 10 - A10.jpg.pcf.srep
+673324 --> 673329 A10.jpg.pcf.srep.brotli
+Compressing File 6 of 10 - rafale.bmp.pcf.srep
+4149541 --> 776766 rafale.bmp.pcf.srep.bsc
+Compressing File 7 of 10 - MSO97.DLL.pcf.srep
+3737082 --> 1773413 MSO97.DLL.pcf.srep.csa
+Compressing File 8 of 10 - AcroRd32.exe.pcf.srep
+3735215 --> 1310473 AcroRd32.exe.pcf.srep.csa
+Compressing File 9 of 10 - english.dic.pcf.srep
+4067567 --> 751537 english.dic.pcf.srep.lzt
+Compressing File 10 of 10 - FlashMX.pdf.pcf.srep
+19430873 --> 2602341 FlashMX.pdf.pcf.srep.lzt
+Original Size: 53134726
+Archive Size: 10127360
+Compression Ratio: 5.2466512496840245
+Program Execution Time (PET): 370.96 seconds
+
+Precompress + Recompress:
+
+python3 share.py -lvl 2 compress maximumcompression maximumcompression
+Share Archiver Version 0.1 by Philip Hofmann
+This is a Linux application, tested and developed on Ubuntu 20.04.3 LTS
+Compressing with level 2
+Start process to create {output_path}.share
+Strong Compression Profile
+Compressors used: zlib, bz2, xz, gz, zst, ppmd, lz4, brotli, lzham, zopfli, lzt, glza, balz, bsc and csa with strongest compression method
+Precompressing Files with Precomp
+Precompressing File 1 of 10
+Precompressing File 2 of 10
+Precompressing File 3 of 10
+Precompressing File 4 of 10
+Precompressing File 5 of 10
+Precompressing File 6 of 10
+Precompressing File 7 of 10
+Precompressing File 8 of 10
+Precompressing File 9 of 10
+Precompressing File 10 of 10
+Compressing File 1 of 10 - FlashMX.pdf.pcf
+26936513 --> 2585509 FlashMX.pdf.pcf.lzt
+Compressing File 2 of 10 - rafale.bmp.pcf
+4149437 --> 776566 rafale.bmp.pcf.bsc
+Compressing File 3 of 10 - world95.txt.pcf
+2988602 --> 464020 world95.txt.pcf.bsc
+Compressing File 4 of 10 - ohs.doc.pcf
+1453728 --> 673480 ohs.doc.pcf.xz
+Compressing File 5 of 10 - english.dic.pcf
+4067463 --> 751437 english.dic.pcf.lzt
+Compressing File 6 of 10 - FP.LOG.pcf
+20617090 --> 466064 FP.LOG.pcf.glza
+Compressing File 7 of 10 - AcroRd32.exe.pcf
+3871031 --> 1301163 AcroRd32.exe.pcf.csa
+Compressing File 8 of 10 - A10.jpg.pcf
+673220 --> 673225 A10.jpg.pcf.brotli
+Compressing File 9 of 10 - MSO97.DLL.pcf
+3773138 --> 1770110 MSO97.DLL.pcf.csa
+Compressing File 10 of 10 - vcfiu.hlp.pcf
+4121494 --> 604865 vcfiu.hlp.pcf.lzt
+Recompress files to account for inter-file redundancy
+...with lzt: FlashMX.pdf.pcf english.dic.pcf vcfiu.hlp.pcf  --> 3947809 lzt.tar.lzt
+...with bsc: rafale.bmp.pcf world95.txt.pcf  --> 1244494 bsc.tar.bsc
+...with csa: AcroRd32.exe.pcf MSO97.DLL.pcf  --> 3076466 csa.tar.csa
+Original Size: 53134726
+Archive Size: 10096640
+Compression Ratio: 5.262614691620183
+Program Execution Time (PET): 518.68 seconds

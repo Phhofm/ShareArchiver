@@ -1,0 +1,61 @@
+Quick Size Comparison
+This is just a quick comparison I did. I selected all files in this corpus, right clicked on my Ubuntu20, and there are multiple compression options. I compressed them just with each available option that was listed. Then I added the share archive created with the same input data in default profile. This is the output of listing all archives with their file sizes, sorted by size:
+
+ 11735040 maximumcompressioncorpus.share
+ 12177048 maximumcompressioncorpus.7z
+ 12403504 maximumcompressioncorpus.tar.xz
+ 12412975 maximumcompressioncorpus.tar.lzma
+ 12412988 maximumcompressioncorpus.tar.lz
+ 12523696 maximumcompressioncorpus.tar.7z
+ 12654720 maximumcompressioncorpus.exe
+ 13610427 maximumcompressioncorpus.tar.bz2
+ 14405261 maximumcompressioncorpus.zip
+ 14405261 maximumcompressioncorpus.cbz
+ 15095465 maximumcompressioncorpus.tar.gz
+ 15102263 maximumcompressioncorpus.war
+ 15102263 maximumcompressioncorpus.jar
+ 15102263 maximumcompressioncorpus.ear
+ 15102263 maximumcompressioncorpus.crx
+ 15102263 maximumcompressioncorpus.apk
+ 15311263 maximumcompressioncorpus.tar.zst
+ 20907094 maximumcompressioncorpus.tar.lz4
+ 21334955 maximumcompressioncorpus.tar.lzo
+ 21427739 maximumcompressioncorpus.tar.Z
+ 53135336 maximumcompressioncorpus.ar
+ 53136148 maximumcompressioncorpus.cpio
+ 53144064 maximumcompressioncorpus.tar
+ 53522432 maximumcompressioncorpus.iso
+
+Times Share Archiver:
+
+Compression, Fast:
+Original Size: 53134726
+Archive Size: 11755520
+Compression Ratio: 4.5199809110953835
+Program Execution Time (PET): 11.13 seconds
+Decompression:
+Program Execution Time (PET): 0.36 seconds
+
+Compression, Default:
+Original Size: 53134726
+Archive Size: 11735040
+Compression Ratio: 4.527869184936736
+Program Execution Time (PET): 156.91 seconds
+Decompression:
+Program Execution Time (PET): 0.34 seconds
+
+Compression, Strong:
+Original Size: 53134726
+Archive Size: 11376640
+Compression Ratio: 4.670511328476597
+Program Execution Time (PET): 254.39 seconds
+Decompression:
+Program Execution Time (PET): 0.31 seconds
+
+Compression, Max:
+Original Size: 53134726
+Archive Size: 11100160
+Compression Ratio: 4.786843252709871
+Program Execution Time (PET): 16464.23 seconds
+Decompression:
+Program Execution Time (PET): 6479.34 seconds

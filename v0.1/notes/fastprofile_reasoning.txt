@@ -1,0 +1,716 @@
+Reasoning for "fast" share archiver profile
+
+'Fast' relating to compression, since decompression is fast by design/default (unless max compression level is chosen)
+
+For creating the fast profile, I reduce the number of compressors used which will drastically improve compression speeds. We leave them on the default profile/settings.
+For this I needed a test / some baseline of data on which I can make that selection of compressors.
+This assumes that each compressor compresses best with a certain filetype. So we choose a testset with some different filetypes in it and then use the min compressors.
+
+For this test we wanted to try filetypes that will most likely be used by a normal user (not for example the silesia corpus, which includes and overrepresents whole books as text files. Who has a pc full of stored large books in single text files? And uploads them for others to download? This subjectively seems like an very specific usecase to me)
+This is why I went with the testset from maximumcompression.com which has different everyday filetypes included
+
+Testset from maximumcompression.com
+https://www.maximumcompression.com/data/files/full_testset.7z on 06.10.2021
+
+(PS full outputs at the end in data output section. Testsystem specs at the very end/bottom)
+
+'du -b' on the decompressed testset:
+53138822
+
+share compression with default
+Archive Size: 11714560
+Program Execution Time (PET):  182.83 seconds
+
+If we look at the compressors that reached min file size (see full data section output below) we find the following compressors (or file extensions in this case):
+
+Min size: brotli (2x), bsc (2x), xz (3x), ppmd, glza, csa
+Compressors used: 14
+Compressors that reached min sizes: 6
+Compressor Reduction: 8
+
+Can we reduce the number of compressors even further to increase compression speed?
+brotli, bsc and xz were used more than once, maybe we can replace the only-once-min-compressors with one of these if file differences are not too severe. So lets have a look at the specific instances where a compressor was min only once, filtered with min compressors (you find the whole filtered data according to min compressors in the data section output again, here only these specific instances):
+
+-rw-rw-r--  1 phhofm phhofm 1010238  rafale.bmp.brotli
+-rw-rw-r--  1 phhofm phhofm  782132 Okt  6 12:27 rafale.bmp.bsc
+-rw-rw-r--  1 phhofm phhofm 1153481 Okt  6 12:27 rafale.bmp.csa
+-rw-rw-r--  1 phhofm phhofm  982910 Okt  6 12:27 rafale.bmp.glza
+-rw-rw-r--  1 phhofm phhofm  780727 Okt  6 12:27 rafale.bmp.ppmd
+-rw-rw-r--  1 phhofm phhofm  976448 Okt  6 12:27 rafale.bmp.xz
+min File:  /tmp/tmprcxu3m5m/rafale.bmp.ppmd
+
+-> bsc is closest to ppmd min file size, we replace ppmd with bsc, so modified list of min compressors: brotli (2x), bsc (3x), xz (3x), glza, csa
+
+-rw-rw-r--  1 phhofm phhofm  758927 Okt  6 12:29 FP.LOG.brotli
+-rw-rw-r--  1 phhofm phhofm  528192 Okt  6 12:28 FP.LOG.bsc
+-rw-rw-r--  1 phhofm phhofm 1043598 Okt  6 12:28 FP.LOG.csa
+-rw-rw-r--  1 phhofm phhofm  508262 Okt  6 12:28 FP.LOG.glza
+-rw-rw-r--  1 phhofm phhofm  659868 Okt  6 12:28 FP.LOG.ppmd
+-rw-rw-r--  1 phhofm phhofm  842004 Okt  6 12:28 FP.LOG.xz
+min File:  /tmp/tmp_s3c_q95/FP.LOG.glza
+
+-> bsc closest to glza min file size, modified list of min compressors: brotli (2x), bsc (4x), xz (3x), csa
+
+-rw-rw-r--  1 phhofm phhofm 1451351 Okt  6 12:29 AcroRd32.exe.brotli
+-rw-rw-r--  1 phhofm phhofm 1605468 Okt  6 12:29 AcroRd32.exe.bsc
+-rw-rw-r--  1 phhofm phhofm 1348393 Okt  6 12:29 AcroRd32.exe.csa
+-rw-rw-r--  1 phhofm phhofm 1552739 Okt  6 12:29 AcroRd32.exe.glza
+-rw-rw-r--  1 phhofm phhofm 1541891 Okt  6 12:29 AcroRd32.exe.ppmd
+-rw-rw-r--  1 phhofm phhofm 1406152 Okt  6 12:29 AcroRd32.exe.xz
+min File:  /tmp/tmpvi8voccq/AcroRd32.exe.csa
+
+-> xz closest to csa min file size, modified list of min compressors: brotli (2x), bsc (4x), xz (4x)
+
+Therefore the chosen compressors for the fast profiles are: xz, bsc and brotli
+Since we reduced the number of used compressors to 3, this should significantly improve compression time. Let test it with the same testset.
+
+Recompression with share with only xz, bsc and brotli compressors:
+Archive Size: 11786240
+Program Execution Time (PET):  124.67 seconds
+
+Compared with Default compression:
+Archive Size: 11714560
+Program Execution Time (PET):  182.83 seconds
+
+As expected, it reduces compression time but archive size went up.
+(To be honest, I expected an even more drastic reduction of compression time since we reduced the number of used compressor so drastically.)
+
+Just out of curiosity, I will benchmark the previously 6 min compressors against each other by compressing this whole testset with only one of those compressors enabled each time
+brotli:
+Archive Size: 12462080
+Program Execution Time (PET):  124.21 seconds
+bsc:
+Archive Size: 12544000
+Program Execution Time (PET):  3.67 seconds
+xz:
+Archive Size: 12441600
+Program Execution Time (PET):  13.74 seconds
+ppmd:
+Archive Size: 12595200
+Program Execution Time (PET):  8.59 seconds
+glza: 
+Archive Size: 12544000
+Program Execution Time (PET):  19.91 seconds
+csa:
+Archive Size: 13056000
+Program Execution Time (PET):  3.72 seconds
+
+brotli seems to be the offender here big time concerning compression time. Even tho from compression benchmarks seen online it should be comparable to xz compression speeds.
+
+Let me test brotli settings of the library i am using
+
+brotli default - no quality parameter given:
+Archive Size: 12462080
+Program Execution Time (PET):  124.21 seconds
+brotli quality=11
+Archive Size: 12462080
+Program Execution Time (PET):  120.49 seconds
+
+meaning the default of this library is highest compression setting. Let me adjust it for default settings.
+some tests
+quality = 10
+Archive Size: 12687360
+Program Execution Time (PET):  42.69 seconds
+quality = 9
+Archive Size: 13537280
+Program Execution Time (PET):  4.87 seconds
+
+quality=9 falls in the range of the other min compressor compression speeds. I will set this as new default for brotli.
+
+recompress whole archive again whith share and all compressors (whole output again per file in full data output section):
+Archive Size: 11735040
+Program Execution Time (PET):  180.55 seconds
+
+(We not that PET has not been affected that much, which might be because of multiprocesses)
+New min compressor list: xz (5x), bsc (2x), ppmd, glza, csa
+Compressors: 5
+Lets have a look at them, selected by single times min compressors and filtered by min compressors, doing the same play again:
+
+-rw-rw-r--  1 phhofm phhofm  528192 Okt  6 FP.LOG.bsc
+-rw-rw-r--  1 phhofm phhofm 1043598 Okt  6 FP.LOG.csa
+-rw-rw-r--  1 phhofm phhofm  508262 Okt  6 FP.LOG.glza
+-rw-rw-r--  1 phhofm phhofm  659868 Okt  6 FP.LOG.ppmd
+-rw-rw-r--  1 phhofm phhofm  842004 Okt  6 FP.LOG.xz
+min File:  /tmp/tmpurlbzgo5/FP.LOG.glza
+min File size in bytes:  508262
+
+-> bsc closest to glza, new min compressor list: xz (5x), bsc (3x), ppmd, csa
+
+-rw-rw-r--  1 phhofm phhofm 1605468 Okt  6 AcroRd32.exe.bsc
+-rw-rw-r--  1 phhofm phhofm 1348393 Okt  6 AcroRd32.exe.csa
+-rw-rw-r--  1 phhofm phhofm 1552739 Okt  6 AcroRd32.exe.glza
+-rw-rw-r--  1 phhofm phhofm 1541891 Okt  6 AcroRd32.exe.ppmd
+-rw-rw-r--  1 phhofm phhofm 1406152 Okt  6 AcroRd32.exe.xz
+min File:  /tmp/tmpcnkim7lh/AcroRd32.exe.csa
+min File size in bytes:  1348393
+
+-> xz closest to csa but difference big enough to consider leaving csa in, lets benchmark afterwards times with csa in or out, otherwise replaced by xz
+
+-rw-rw-r--  1 phhofm phhofm  782132 Okt  6 rafale.bmp.bsc
+-rw-rw-r--  1 phhofm phhofm 1153481 Okt  6 rafale.bmp.csa
+-rw-rw-r--  1 phhofm phhofm  982910 Okt  6 rafale.bmp.glza
+-rw-rw-r--  1 phhofm phhofm  780727 Okt  6 rafale.bmp.ppmd
+-rw-rw-r--  1 phhofm phhofm  976448 Okt  6 rafale.bmp.xz
+min File:  /tmp/tmp0em2u5wz/rafale.bmp.ppmd
+min File size in bytes:  780727
+
+-> bsc replaces ppmd. New list: xz (5x), bsc (4x), csa ; otherwise xz (6x), bsc (4x)
+
+lets test it:
+xz,bsc,csa:
+Archive Size: 11755520
+Program Execution Time (PET):  13.88 seconds
+
+xz, bsc:
+Archive Size: 11806720
+Program Execution Time (PET):  13.55 seconds
+
+Speeds fast enough to leave csa in.
+
+RESULT: Final "fast" profile uses xz, bsc and csa compressors.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--- full data output section ------
+
+output of ls -ls on the testset (decompressed)
+
+insgesamt 51916
+  824 -rw-rw-r-- 1 phhofm phhofm   842468 Dez 25  2000 A10.jpg
+ 3784 -rw-rw-r-- 1 phhofm phhofm  3870784 Mär 27  2001 AcroRd32.exe
+ 3976 -rw-rw-r-- 1 phhofm phhofm  4067439 Feb  2  2003 english.dic
+ 4424 -rw-rw-r-- 1 phhofm phhofm  4526946 Feb 23  2003 FlashMX.pdf
+20136 -rw-rw-r-- 1 phhofm phhofm 20617071 Feb  4  2003 FP.LOG
+ 3696 -rw-rw-r-- 1 phhofm phhofm  3782416 Sep  1  1997 MSO97.DLL
+ 4072 -rw-rw-r-- 1 phhofm phhofm  4168192 Feb 22  2003 ohs.doc
+ 4056 -rw-rw-r-- 1 phhofm phhofm  4149414 Nov  4  2002 rafale.bmp
+ 4028 -rw-rw-r-- 1 phhofm phhofm  4121418 Okt 27  1995 vcfiu.hlp
+ 2920 -rw-rw-r-- 1 phhofm phhofm  2988578 Apr 20  1996 world95.txt
+ 
+ ---
+ 
+ output of compression, verbose, default profile, just the file comparisons
+
+Archive Size: 11714560
+Program Execution Time (PET):  182.83 seconds
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:26 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:26 ..
+-rw-rw-r--  1 phhofm phhofm  822838 Okt  6 12:26 ohs.doc__4168192.lzham
+-rw-rw-r--  1 phhofm phhofm  835207 Okt  6 12:26 ohs.doc.balz
+-rw-rw-r--  1 phhofm phhofm  787574 Okt  6 12:26 ohs.doc.brotli
+-rw-rw-r--  1 phhofm phhofm  823642 Okt  6 12:26 ohs.doc.bsc
+-rw-rw-r--  1 phhofm phhofm  906814 Okt  6 12:26 ohs.doc.bz2
+-rw-rw-r--  1 phhofm phhofm  800476 Okt  6 12:26 ohs.doc.csa
+-rw-rw-r--  1 phhofm phhofm  819409 Okt  6 12:26 ohs.doc.glza
+-rw-rw-r--  1 phhofm phhofm 1001815 Okt  6 12:26 ohs.doc.gz
+-rw-rw-r--  1 phhofm phhofm 1166965 Okt  6 12:26 ohs.doc.lz4
+-rw-r-----  1 phhofm phhofm  816188 Okt  6 12:26 ohs.doc.lzt
+-rw-rw-r--  1 phhofm phhofm  844517 Okt  6 12:26 ohs.doc.ppmd
+-rw-rw-r--  1 phhofm phhofm  790732 Okt  6 12:26 ohs.doc.xz
+-rw-rw-r--  1 phhofm phhofm 1009146 Okt  6 12:26 ohs.doc.zlib
+-rw-rw-r--  1 phhofm phhofm  982036 Okt  6 12:27 ohs.doc.zopfli
+-rw-rw-r--  1 phhofm phhofm  905129 Okt  6 12:26 ohs.doc.zst
+min File:  /tmp/tmpyseaoz04/ohs.doc.brotli
+min File size in bytes:  787574
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:27 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:27 ..
+-rw-rw-r--  1 phhofm phhofm  624106 Okt  6 12:27 world95.txt__2988578.lzham
+-rw-rw-r--  1 phhofm phhofm  653799 Okt  6 12:27 world95.txt.balz
+-rw-rw-r--  1 phhofm phhofm  557311 Okt  6 12:27 world95.txt.brotli
+-rw-rw-r--  1 phhofm phhofm  467596 Okt  6 12:27 world95.txt.bsc
+-rw-rw-r--  1 phhofm phhofm  577006 Okt  6 12:27 world95.txt.bz2
+-rw-rw-r--  1 phhofm phhofm  634312 Okt  6 12:27 world95.txt.csa
+-rw-rw-r--  1 phhofm phhofm  494110 Okt  6 12:27 world95.txt.glza
+-rw-rw-r--  1 phhofm phhofm  863382 Okt  6 12:27 world95.txt.gz
+-rw-rw-r--  1 phhofm phhofm 1515865 Okt  6 12:27 world95.txt.lz4
+-rw-r-----  1 phhofm phhofm  597888 Okt  6 12:27 world95.txt.lzt
+-rw-rw-r--  1 phhofm phhofm  495080 Okt  6 12:27 world95.txt.ppmd
+-rw-rw-r--  1 phhofm phhofm  573456 Okt  6 12:27 world95.txt.xz
+-rw-rw-r--  1 phhofm phhofm  873561 Okt  6 12:27 world95.txt.zlib
+-rw-rw-r--  1 phhofm phhofm  829561 Okt  6 12:27 world95.txt.zopfli
+-rw-rw-r--  1 phhofm phhofm  793131 Okt  6 12:27 world95.txt.zst
+min File:  /tmp/tmpiblh4pii/world95.txt.bsc
+min File size in bytes:  467596
+
+drwx------  2 phhofm phhofm   4096 Okt  6 12:27 .
+drwxrwxrwt 32 root   root    16384 Okt  6 12:27 ..
+-rw-rw-r--  1 phhofm phhofm 842003 Okt  6 12:27 A10.jpg__842468.lzham
+-rw-rw-r--  1 phhofm phhofm 836321 Okt  6 12:27 A10.jpg.balz
+-rw-rw-r--  1 phhofm phhofm 842473 Okt  6 12:27 A10.jpg.brotli
+-rw-rw-r--  1 phhofm phhofm 829328 Okt  6 12:27 A10.jpg.bsc
+-rw-rw-r--  1 phhofm phhofm 836468 Okt  6 12:27 A10.jpg.bz2
+-rw-rw-r--  1 phhofm phhofm 835995 Okt  6 12:27 A10.jpg.csa
+-rw-rw-r--  1 phhofm phhofm 847802 Okt  6 12:27 A10.jpg.glza
+-rw-rw-r--  1 phhofm phhofm 841824 Okt  6 12:27 A10.jpg.gz
+-rw-rw-r--  1 phhofm phhofm 842539 Okt  6 12:27 A10.jpg.lz4
+-rw-r-----  1 phhofm phhofm 842501 Okt  6 12:27 A10.jpg.lzt
+-rw-rw-r--  1 phhofm phhofm 839411 Okt  6 12:27 A10.jpg.ppmd
+-rw-rw-r--  1 phhofm phhofm 842108 Okt  6 12:27 A10.jpg.xz
+-rw-rw-r--  1 phhofm phhofm 841804 Okt  6 12:27 A10.jpg.zlib
+-rw-rw-r--  1 phhofm phhofm 840286 Okt  6 12:27 A10.jpg.zopfli
+-rw-rw-r--  1 phhofm phhofm 842498 Okt  6 12:27 A10.jpg.zst
+min File:  /tmp/tmpqw2tpp1v/A10.jpg.bsc
+min File size in bytes:  829328
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:27 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:27 ..
+-rw-rw-r--  1 phhofm phhofm 3732083 Okt  6 12:27 FlashMX.pdf__4526946.lzham
+-rw-rw-r--  1 phhofm phhofm 3772339 Okt  6 12:27 FlashMX.pdf.balz
+-rw-rw-r--  1 phhofm phhofm 3687867 Okt  6 12:27 FlashMX.pdf.brotli
+-rw-rw-r--  1 phhofm phhofm 3729218 Okt  6 12:27 FlashMX.pdf.bsc
+-rw-rw-r--  1 phhofm phhofm 3810876 Okt  6 12:27 FlashMX.pdf.bz2
+-rw-rw-r--  1 phhofm phhofm 3746453 Okt  6 12:27 FlashMX.pdf.csa
+-rw-rw-r--  1 phhofm phhofm 3788939 Okt  6 12:27 FlashMX.pdf.glza
+-rw-rw-r--  1 phhofm phhofm 3829660 Okt  6 12:27 FlashMX.pdf.gz
+-rw-rw-r--  1 phhofm phhofm 3988964 Okt  6 12:27 FlashMX.pdf.lz4
+-rw-r-----  1 phhofm phhofm 3728483 Okt  6 12:27 FlashMX.pdf.lzt
+-rw-rw-r--  1 phhofm phhofm 3774937 Okt  6 12:27 FlashMX.pdf.ppmd
+-rw-rw-r--  1 phhofm phhofm 3699544 Okt  6 12:27 FlashMX.pdf.xz
+-rw-rw-r--  1 phhofm phhofm 3832440 Okt  6 12:27 FlashMX.pdf.zlib
+-rw-rw-r--  1 phhofm phhofm 3798256 Okt  6 12:27 FlashMX.pdf.zopfli
+-rw-rw-r--  1 phhofm phhofm 3822760 Okt  6 12:27 FlashMX.pdf.zst
+min File:  /tmp/tmpl6y7j_20/FlashMX.pdf.brotli
+min File size in bytes:  3687867
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:27 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:27 ..
+-rw-rw-r--  1 phhofm phhofm 1900404 Okt  6 12:27 MSO97.DLL__3782416.lzham
+-rw-rw-r--  1 phhofm phhofm 1895556 Okt  6 12:27 MSO97.DLL.balz
+-rw-rw-r--  1 phhofm phhofm 1848184 Okt  6 12:27 MSO97.DLL.brotli
+-rw-rw-r--  1 phhofm phhofm 1930560 Okt  6 12:27 MSO97.DLL.bsc
+-rw-rw-r--  1 phhofm phhofm 2110954 Okt  6 12:27 MSO97.DLL.bz2
+-rw-rw-r--  1 phhofm phhofm 1828394 Okt  6 12:27 MSO97.DLL.csa
+-rw-rw-r--  1 phhofm phhofm 1902244 Okt  6 12:27 MSO97.DLL.glza
+-rw-rw-r--  1 phhofm phhofm 2187940 Okt  6 12:27 MSO97.DLL.gz
+-rw-rw-r--  1 phhofm phhofm 2950916 Okt  6 12:27 MSO97.DLL.lz4
+-rw-r-----  1 phhofm phhofm 1864666 Okt  6 12:27 MSO97.DLL.lzt
+-rw-rw-r--  1 phhofm phhofm 1915711 Okt  6 12:27 MSO97.DLL.ppmd
+-rw-rw-r--  1 phhofm phhofm 1816656 Okt  6 12:27 MSO97.DLL.xz
+-rw-rw-r--  1 phhofm phhofm 2189534 Okt  6 12:27 MSO97.DLL.zlib
+-rw-rw-r--  1 phhofm phhofm 2117635 Okt  6 12:27 MSO97.DLL.zopfli
+-rw-rw-r--  1 phhofm phhofm 2303613 Okt  6 12:27 MSO97.DLL.zst
+min File:  /tmp/tmpo_sj1x0w/MSO97.DLL.xz
+min File size in bytes:  1816656
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:27 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:27 ..
+-rw-rw-r--  1 phhofm phhofm  667002 Okt  6 12:27 vcfiu.hlp__4121418.lzham
+-rw-rw-r--  1 phhofm phhofm  716321 Okt  6 12:27 vcfiu.hlp.balz
+-rw-rw-r--  1 phhofm phhofm  625293 Okt  6 12:27 vcfiu.hlp.brotli
+-rw-rw-r--  1 phhofm phhofm  641692 Okt  6 12:27 vcfiu.hlp.bsc
+-rw-rw-r--  1 phhofm phhofm  712716 Okt  6 12:27 vcfiu.hlp.bz2
+-rw-rw-r--  1 phhofm phhofm  714194 Okt  6 12:27 vcfiu.hlp.csa
+-rw-rw-r--  1 phhofm phhofm  695354 Okt  6 12:27 vcfiu.hlp.glza
+-rw-rw-r--  1 phhofm phhofm  839458 Okt  6 12:27 vcfiu.hlp.gz
+-rw-rw-r--  1 phhofm phhofm 1331347 Okt  6 12:27 vcfiu.hlp.lz4
+-rw-r-----  1 phhofm phhofm  673640 Okt  6 12:27 vcfiu.hlp.lzt
+-rw-rw-r--  1 phhofm phhofm  691699 Okt  6 12:27 vcfiu.hlp.ppmd
+-rw-rw-r--  1 phhofm phhofm  613092 Okt  6 12:27 vcfiu.hlp.xz
+-rw-rw-r--  1 phhofm phhofm  847585 Okt  6 12:27 vcfiu.hlp.zlib
+-rw-rw-r--  1 phhofm phhofm  795948 Okt  6 12:27 vcfiu.hlp.zopfli
+-rw-rw-r--  1 phhofm phhofm  841659 Okt  6 12:27 vcfiu.hlp.zst
+min File:  /tmp/tmp2n444dwi/vcfiu.hlp.xz
+min File size in bytes:  613092
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:27 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:27 ..
+-rw-rw-r--  1 phhofm phhofm 1039742 Okt  6 12:27 rafale.bmp__4149414.lzham
+-rw-rw-r--  1 phhofm phhofm 1074566 Okt  6 12:27 rafale.bmp.balz
+-rw-rw-r--  1 phhofm phhofm 1010238 Okt  6 12:28 rafale.bmp.brotli
+-rw-rw-r--  1 phhofm phhofm  782132 Okt  6 12:27 rafale.bmp.bsc
+-rw-rw-r--  1 phhofm phhofm  890163 Okt  6 12:27 rafale.bmp.bz2
+-rw-rw-r--  1 phhofm phhofm 1153481 Okt  6 12:27 rafale.bmp.csa
+-rw-rw-r--  1 phhofm phhofm  982910 Okt  6 12:27 rafale.bmp.glza
+-rw-rw-r--  1 phhofm phhofm 1254753 Okt  6 12:27 rafale.bmp.gz
+-rw-rw-r--  1 phhofm phhofm 2317235 Okt  6 12:27 rafale.bmp.lz4
+-rw-r-----  1 phhofm phhofm 1024005 Okt  6 12:27 rafale.bmp.lzt
+-rw-rw-r--  1 phhofm phhofm  780727 Okt  6 12:27 rafale.bmp.ppmd
+-rw-rw-r--  1 phhofm phhofm  976448 Okt  6 12:27 rafale.bmp.xz
+-rw-rw-r--  1 phhofm phhofm 1261662 Okt  6 12:27 rafale.bmp.zlib
+-rw-rw-r--  1 phhofm phhofm 1140303 Okt  6 12:28 rafale.bmp.zopfli
+-rw-rw-r--  1 phhofm phhofm 1357980 Okt  6 12:27 rafale.bmp.zst
+min File:  /tmp/tmprcxu3m5m/rafale.bmp.ppmd
+min File size in bytes:  780727
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:28 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:28 ..
+-rw-rw-r--  1 phhofm phhofm  923525 Okt  6 12:28 english.dic__4067439.lzham
+-rw-rw-r--  1 phhofm phhofm  863791 Okt  6 12:28 english.dic.balz
+-rw-rw-r--  1 phhofm phhofm  865179 Okt  6 12:28 english.dic.brotli
+-rw-rw-r--  1 phhofm phhofm 1183780 Okt  6 12:28 english.dic.bsc
+-rw-rw-r--  1 phhofm phhofm 1221689 Okt  6 12:28 english.dic.bz2
+-rw-rw-r--  1 phhofm phhofm  925328 Okt  6 12:28 english.dic.csa
+-rw-rw-r--  1 phhofm phhofm  928125 Okt  6 12:28 english.dic.glza
+-rw-rw-r--  1 phhofm phhofm 1049608 Okt  6 12:28 english.dic.gz
+-rw-rw-r--  1 phhofm phhofm 1952339 Okt  6 12:28 english.dic.lz4
+-rw-r-----  1 phhofm phhofm  876038 Okt  6 12:28 english.dic.lzt
+-rw-rw-r--  1 phhofm phhofm 1028120 Okt  6 12:28 english.dic.ppmd
+-rw-rw-r--  1 phhofm phhofm  851628 Okt  6 12:28 english.dic.xz
+-rw-rw-r--  1 phhofm phhofm 1049443 Okt  6 12:28 english.dic.zlib
+-rw-rw-r--  1 phhofm phhofm  887932 Okt  6 12:28 english.dic.zopfli
+-rw-rw-r--  1 phhofm phhofm 1246393 Okt  6 12:28 english.dic.zst
+min File:  /tmp/tmpn1xv5c4j/english.dic.xz
+min File size in bytes:  851628
+
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:28 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:28 ..
+-rw-rw-r--  1 phhofm phhofm  921633 Okt  6 12:28 FP.LOG__20617071.lzham
+-rw-rw-r--  1 phhofm phhofm  710813 Okt  6 12:28 FP.LOG.balz
+-rw-rw-r--  1 phhofm phhofm  758927 Okt  6 12:29 FP.LOG.brotli
+-rw-rw-r--  1 phhofm phhofm  528192 Okt  6 12:28 FP.LOG.bsc
+-rw-rw-r--  1 phhofm phhofm  723415 Okt  6 12:28 FP.LOG.bz2
+-rw-rw-r--  1 phhofm phhofm 1043598 Okt  6 12:28 FP.LOG.csa
+-rw-rw-r--  1 phhofm phhofm  508262 Okt  6 12:28 FP.LOG.glza
+-rw-rw-r--  1 phhofm phhofm 1333132 Okt  6 12:28 FP.LOG.gz
+-rw-rw-r--  1 phhofm phhofm 2368379 Okt  6 12:28 FP.LOG.lz4
+-rw-r-----  1 phhofm phhofm  732244 Okt  6 12:28 FP.LOG.lzt
+-rw-rw-r--  1 phhofm phhofm  659868 Okt  6 12:28 FP.LOG.ppmd
+-rw-rw-r--  1 phhofm phhofm  842004 Okt  6 12:28 FP.LOG.xz
+-rw-rw-r--  1 phhofm phhofm 1449455 Okt  6 12:28 FP.LOG.zlib
+-rw-rw-r--  1 phhofm phhofm 1258260 Okt  6 12:29 FP.LOG.zopfli
+-rw-rw-r--  1 phhofm phhofm 1365597 Okt  6 12:28 FP.LOG.zst
+min File:  /tmp/tmp_s3c_q95/FP.LOG.glza
+min File size in bytes:  508262
+
+drwx------  2 phhofm phhofm    4096 Okt  6 12:29 .
+drwxrwxrwt 32 root   root     16384 Okt  6 12:29 ..
+-rw-rw-r--  1 phhofm phhofm 1501616 Okt  6 12:29 AcroRd32.exe__3870784.lzham
+-rw-rw-r--  1 phhofm phhofm 1477648 Okt  6 12:29 AcroRd32.exe.balz
+-rw-rw-r--  1 phhofm phhofm 1451351 Okt  6 12:29 AcroRd32.exe.brotli
+-rw-rw-r--  1 phhofm phhofm 1605468 Okt  6 12:29 AcroRd32.exe.bsc
+-rw-rw-r--  1 phhofm phhofm 1699590 Okt  6 12:29 AcroRd32.exe.bz2
+-rw-rw-r--  1 phhofm phhofm 1348393 Okt  6 12:29 AcroRd32.exe.csa
+-rw-rw-r--  1 phhofm phhofm 1552739 Okt  6 12:29 AcroRd32.exe.glza
+-rw-rw-r--  1 phhofm phhofm 1728149 Okt  6 12:29 AcroRd32.exe.gz
+-rw-rw-r--  1 phhofm phhofm 2443192 Okt  6 12:29 AcroRd32.exe.lz4
+-rw-r-----  1 phhofm phhofm 1434485 Okt  6 12:29 AcroRd32.exe.lzt
+-rw-rw-r--  1 phhofm phhofm 1541891 Okt  6 12:29 AcroRd32.exe.ppmd
+-rw-rw-r--  1 phhofm phhofm 1406152 Okt  6 12:29 AcroRd32.exe.xz
+-rw-rw-r--  1 phhofm phhofm 1732407 Okt  6 12:29 AcroRd32.exe.zlib
+-rw-rw-r--  1 phhofm phhofm 1662377 Okt  6 12:29 AcroRd32.exe.zopfli
+-rw-rw-r--  1 phhofm phhofm 1822497 Okt  6 12:29 AcroRd32.exe.zst
+min File:  /tmp/tmpvi8voccq/AcroRd32.exe.csa
+min File size in bytes:  1348393
+
+Archive Size: 11714560
+Program Execution Time (PET):  182.83 seconds
+
+
+---
+
+Filtered according to min compressors
+
+-rw-rw-r--  1 phhofm phhofm  787574 Okt  6 12:26 ohs.doc.brotli
+-rw-rw-r--  1 phhofm phhofm  823642 Okt  6 12:26 ohs.doc.bsc
+-rw-rw-r--  1 phhofm phhofm  800476 Okt  6 12:26 ohs.doc.csa
+-rw-rw-r--  1 phhofm phhofm  819409 Okt  6 12:26 ohs.doc.glza
+-rw-rw-r--  1 phhofm phhofm  844517 Okt  6 12:26 ohs.doc.ppmd
+-rw-rw-r--  1 phhofm phhofm  790732 Okt  6 12:26 ohs.doc.xz
+min File:  /tmp/tmpyseaoz04/ohs.doc.brotli
+
+-rw-rw-r--  1 phhofm phhofm  557311 Okt  6 12:27 world95.txt.brotli
+-rw-rw-r--  1 phhofm phhofm  467596 Okt  6 12:27 world95.txt.bsc
+-rw-rw-r--  1 phhofm phhofm  634312 Okt  6 12:27 world95.txt.csa
+-rw-rw-r--  1 phhofm phhofm  494110 Okt  6 12:27 world95.txt.glza
+-rw-rw-r--  1 phhofm phhofm  495080 Okt  6 12:27 world95.txt.ppmd
+-rw-rw-r--  1 phhofm phhofm  573456 Okt  6 12:27 world95.txt.xz
+min File:  /tmp/tmpiblh4pii/world95.txt.bsc
+
+-rw-rw-r--  1 phhofm phhofm 842473 Okt  6 12:27 A10.jpg.brotli
+-rw-rw-r--  1 phhofm phhofm 829328 Okt  6 12:27 A10.jpg.bsc
+-rw-rw-r--  1 phhofm phhofm 835995 Okt  6 12:27 A10.jpg.csa
+-rw-rw-r--  1 phhofm phhofm 847802 Okt  6 12:27 A10.jpg.glza
+-rw-rw-r--  1 phhofm phhofm 839411 Okt  6 12:27 A10.jpg.ppmd
+-rw-rw-r--  1 phhofm phhofm 842108 Okt  6 12:27 A10.jpg.xz
+min File:  /tmp/tmpqw2tpp1v/A10.jpg.bsc
+
+-rw-rw-r--  1 phhofm phhofm 3687867 Okt  6 12:27 FlashMX.pdf.brotli
+-rw-rw-r--  1 phhofm phhofm 3729218 Okt  6 12:27 FlashMX.pdf.bsc
+-rw-rw-r--  1 phhofm phhofm 3746453 Okt  6 12:27 FlashMX.pdf.csa
+-rw-rw-r--  1 phhofm phhofm 3788939 Okt  6 12:27 FlashMX.pdf.glza
+-rw-rw-r--  1 phhofm phhofm 3774937 Okt  6 12:27 FlashMX.pdf.ppmd
+-rw-rw-r--  1 phhofm phhofm 3699544 Okt  6 12:27 FlashMX.pdf.xz
+min File:  /tmp/tmpl6y7j_20/FlashMX.pdf.brotli
+
+-rw-rw-r--  1 phhofm phhofm 1848184 Okt  6 12:27 MSO97.DLL.brotli
+-rw-rw-r--  1 phhofm phhofm 1930560 Okt  6 12:27 MSO97.DLL.bsc
+-rw-rw-r--  1 phhofm phhofm 1828394 Okt  6 12:27 MSO97.DLL.csa
+-rw-rw-r--  1 phhofm phhofm 1902244 Okt  6 12:27 MSO97.DLL.glza
+-rw-rw-r--  1 phhofm phhofm 1915711 Okt  6 12:27 MSO97.DLL.ppmd
+-rw-rw-r--  1 phhofm phhofm 1816656 Okt  6 12:27 MSO97.DLL.xz
+min File:  /tmp/tmpo_sj1x0w/MSO97.DLL.xz
+
+-rw-rw-r--  1 phhofm phhofm  625293 Okt  6 12:27 vcfiu.hlp.brotli
+-rw-rw-r--  1 phhofm phhofm  641692 Okt  6 12:27 vcfiu.hlp.bsc
+-rw-rw-r--  1 phhofm phhofm  714194 Okt  6 12:27 vcfiu.hlp.csa
+-rw-rw-r--  1 phhofm phhofm  695354 Okt  6 12:27 vcfiu.hlp.glza
+-rw-rw-r--  1 phhofm phhofm  691699 Okt  6 12:27 vcfiu.hlp.ppmd
+-rw-rw-r--  1 phhofm phhofm  613092 Okt  6 12:27 vcfiu.hlp.xz
+min File:  /tmp/tmp2n444dwi/vcfiu.hlp.xz
+
+-rw-rw-r--  1 phhofm phhofm 1010238 Okt  6 12:28 rafale.bmp.brotli
+-rw-rw-r--  1 phhofm phhofm  782132 Okt  6 12:27 rafale.bmp.bsc
+-rw-rw-r--  1 phhofm phhofm 1153481 Okt  6 12:27 rafale.bmp.csa
+-rw-rw-r--  1 phhofm phhofm  982910 Okt  6 12:27 rafale.bmp.glza
+-rw-rw-r--  1 phhofm phhofm  780727 Okt  6 12:27 rafale.bmp.ppmd
+-rw-rw-r--  1 phhofm phhofm  976448 Okt  6 12:27 rafale.bmp.xz
+min File:  /tmp/tmprcxu3m5m/rafale.bmp.ppmd
+
+-rw-rw-r--  1 phhofm phhofm  865179 Okt  6 12:28 english.dic.brotli
+-rw-rw-r--  1 phhofm phhofm 1183780 Okt  6 12:28 english.dic.bsc
+-rw-rw-r--  1 phhofm phhofm  925328 Okt  6 12:28 english.dic.csa
+-rw-rw-r--  1 phhofm phhofm  928125 Okt  6 12:28 english.dic.glza
+-rw-rw-r--  1 phhofm phhofm 1028120 Okt  6 12:28 english.dic.ppmd
+-rw-rw-r--  1 phhofm phhofm  851628 Okt  6 12:28 english.dic.xz
+min File:  /tmp/tmpn1xv5c4j/english.dic.xz
+
+-rw-rw-r--  1 phhofm phhofm  758927 Okt  6 12:29 FP.LOG.brotli
+-rw-rw-r--  1 phhofm phhofm  528192 Okt  6 12:28 FP.LOG.bsc
+-rw-rw-r--  1 phhofm phhofm 1043598 Okt  6 12:28 FP.LOG.csa
+-rw-rw-r--  1 phhofm phhofm  508262 Okt  6 12:28 FP.LOG.glza
+-rw-rw-r--  1 phhofm phhofm  659868 Okt  6 12:28 FP.LOG.ppmd
+-rw-rw-r--  1 phhofm phhofm  842004 Okt  6 12:28 FP.LOG.xz
+min File:  /tmp/tmp_s3c_q95/FP.LOG.glza
+
+-rw-rw-r--  1 phhofm phhofm 1451351 Okt  6 12:29 AcroRd32.exe.brotli
+-rw-rw-r--  1 phhofm phhofm 1605468 Okt  6 12:29 AcroRd32.exe.bsc
+-rw-rw-r--  1 phhofm phhofm 1348393 Okt  6 12:29 AcroRd32.exe.csa
+-rw-rw-r--  1 phhofm phhofm 1552739 Okt  6 12:29 AcroRd32.exe.glza
+-rw-rw-r--  1 phhofm phhofm 1541891 Okt  6 12:29 AcroRd32.exe.ppmd
+-rw-rw-r--  1 phhofm phhofm 1406152 Okt  6 12:29 AcroRd32.exe.xz
+min File:  /tmp/tmpvi8voccq/AcroRd32.exe.csa
+
+--------
+
+output or recompression with default value of brotli now 9
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:34 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:34 ..
+-rw-rw-r--  1 phhofm phhofm  822838 Okt  6 14:34 ohs.doc__4168192.lzham
+-rw-rw-r--  1 phhofm phhofm  835207 Okt  6 14:34 ohs.doc.balz
+-rw-rw-r--  1 phhofm phhofm  831755 Okt  6 14:34 ohs.doc.brotli
+-rw-rw-r--  1 phhofm phhofm  823642 Okt  6 14:34 ohs.doc.bsc
+-rw-rw-r--  1 phhofm phhofm  906814 Okt  6 14:34 ohs.doc.bz2
+-rw-rw-r--  1 phhofm phhofm  800476 Okt  6 14:34 ohs.doc.csa
+-rw-rw-r--  1 phhofm phhofm  819409 Okt  6 14:34 ohs.doc.glza
+-rw-rw-r--  1 phhofm phhofm 1001815 Okt  6 14:34 ohs.doc.gz
+-rw-r-----  1 phhofm phhofm  816188 Okt  6 14:34 ohs.doc.lzt
+-rw-rw-r--  1 phhofm phhofm  844517 Okt  6 14:34 ohs.doc.ppmd
+-rw-rw-r--  1 phhofm phhofm  790732 Okt  6 14:34 ohs.doc.xz
+-rw-rw-r--  1 phhofm phhofm 1009146 Okt  6 14:34 ohs.doc.zlib
+-rw-rw-r--  1 phhofm phhofm  982036 Okt  6 14:34 ohs.doc.zopfli
+-rw-rw-r--  1 phhofm phhofm  905129 Okt  6 14:34 ohs.doc.zst
+min File:  /tmp/tmp3ast715v/ohs.doc.xz
+min File size in bytes:  790732
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:34 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:34 ..
+-rw-rw-r--  1 phhofm phhofm  624106 Okt  6 14:34 world95.txt__2988578.lzham
+-rw-rw-r--  1 phhofm phhofm  653799 Okt  6 14:34 world95.txt.balz
+-rw-rw-r--  1 phhofm phhofm  613571 Okt  6 14:34 world95.txt.brotli
+-rw-rw-r--  1 phhofm phhofm  467596 Okt  6 14:34 world95.txt.bsc
+-rw-rw-r--  1 phhofm phhofm  577006 Okt  6 14:34 world95.txt.bz2
+-rw-rw-r--  1 phhofm phhofm  634312 Okt  6 14:34 world95.txt.csa
+-rw-rw-r--  1 phhofm phhofm  494110 Okt  6 14:34 world95.txt.glza
+-rw-rw-r--  1 phhofm phhofm  863382 Okt  6 14:34 world95.txt.gz
+-rw-rw-r--  1 phhofm phhofm 1515865 Okt  6 14:34 world95.txt.lz4
+-rw-r-----  1 phhofm phhofm  597888 Okt  6 14:34 world95.txt.lzt
+-rw-rw-r--  1 phhofm phhofm  495080 Okt  6 14:34 world95.txt.ppmd
+-rw-rw-r--  1 phhofm phhofm  573456 Okt  6 14:34 world95.txt.xz
+-rw-rw-r--  1 phhofm phhofm  873561 Okt  6 14:34 world95.txt.zlib
+-rw-rw-r--  1 phhofm phhofm  829561 Okt  6 14:34 world95.txt.zopfli
+-rw-rw-r--  1 phhofm phhofm  793131 Okt  6 14:34 world95.txt.zst
+min File:  /tmp/tmp5q833fr0/world95.txt.bsc
+min File size in bytes:  467596
+
+drwx------  2 phhofm phhofm   4096 Okt  6 14:34 .
+drwxrwxrwt 31 root   root    16384 Okt  6 14:34 ..
+-rw-rw-r--  1 phhofm phhofm 842003 Okt  6 14:34 A10.jpg__842468.lzham
+-rw-rw-r--  1 phhofm phhofm 836321 Okt  6 14:34 A10.jpg.balz
+-rw-rw-r--  1 phhofm phhofm 842473 Okt  6 14:34 A10.jpg.brotli
+-rw-rw-r--  1 phhofm phhofm 829328 Okt  6 14:34 A10.jpg.bsc
+-rw-rw-r--  1 phhofm phhofm 836468 Okt  6 14:34 A10.jpg.bz2
+-rw-rw-r--  1 phhofm phhofm 835995 Okt  6 14:34 A10.jpg.csa
+-rw-rw-r--  1 phhofm phhofm 847802 Okt  6 14:34 A10.jpg.glza
+-rw-rw-r--  1 phhofm phhofm 841824 Okt  6 14:34 A10.jpg.gz
+-rw-rw-r--  1 phhofm phhofm 842539 Okt  6 14:34 A10.jpg.lz4
+-rw-r-----  1 phhofm phhofm 842501 Okt  6 14:34 A10.jpg.lzt
+-rw-rw-r--  1 phhofm phhofm 839411 Okt  6 14:34 A10.jpg.ppmd
+-rw-rw-r--  1 phhofm phhofm 842108 Okt  6 14:34 A10.jpg.xz
+-rw-rw-r--  1 phhofm phhofm 841804 Okt  6 14:34 A10.jpg.zlib
+-rw-rw-r--  1 phhofm phhofm 840286 Okt  6 14:34 A10.jpg.zopfli
+-rw-rw-r--  1 phhofm phhofm 842498 Okt  6 14:34 A10.jpg.zst
+min File:  /tmp/tmpyjlvnhsl/A10.jpg.bsc
+min File size in bytes:  829328
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:34 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:34 ..
+-rw-rw-r--  1 phhofm phhofm 3732083 Okt  6 14:34 FlashMX.pdf__4526946.lzham
+-rw-rw-r--  1 phhofm phhofm 3772339 Okt  6 14:34 FlashMX.pdf.balz
+-rw-rw-r--  1 phhofm phhofm 3739955 Okt  6 14:34 FlashMX.pdf.brotli
+-rw-rw-r--  1 phhofm phhofm 3729218 Okt  6 14:34 FlashMX.pdf.bsc
+-rw-rw-r--  1 phhofm phhofm 3810876 Okt  6 14:34 FlashMX.pdf.bz2
+-rw-rw-r--  1 phhofm phhofm 3746453 Okt  6 14:34 FlashMX.pdf.csa
+-rw-rw-r--  1 phhofm phhofm 3788939 Okt  6 14:34 FlashMX.pdf.glza
+-rw-rw-r--  1 phhofm phhofm 3829660 Okt  6 14:34 FlashMX.pdf.gz
+-rw-rw-r--  1 phhofm phhofm 3988964 Okt  6 14:34 FlashMX.pdf.lz4
+-rw-r-----  1 phhofm phhofm 3728483 Okt  6 14:34 FlashMX.pdf.lzt
+-rw-rw-r--  1 phhofm phhofm 3774937 Okt  6 14:34 FlashMX.pdf.ppmd
+-rw-rw-r--  1 phhofm phhofm 3699544 Okt  6 14:34 FlashMX.pdf.xz
+-rw-rw-r--  1 phhofm phhofm 3832440 Okt  6 14:34 FlashMX.pdf.zlib
+-rw-rw-r--  1 phhofm phhofm 3798256 Okt  6 14:34 FlashMX.pdf.zopfli
+-rw-rw-r--  1 phhofm phhofm 3822760 Okt  6 14:34 FlashMX.pdf.zst
+min File:  /tmp/tmpf3xyi0bo/FlashMX.pdf.xz
+min File size in bytes:  3699544
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:34 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:34 ..
+-rw-rw-r--  1 phhofm phhofm 1900404 Okt  6 14:35 MSO97.DLL__3782416.lzham
+-rw-rw-r--  1 phhofm phhofm 1895556 Okt  6 14:35 MSO97.DLL.balz
+-rw-rw-r--  1 phhofm phhofm 2059040 Okt  6 14:35 MSO97.DLL.brotli
+-rw-rw-r--  1 phhofm phhofm 1930560 Okt  6 14:35 MSO97.DLL.bsc
+-rw-rw-r--  1 phhofm phhofm 2110954 Okt  6 14:34 MSO97.DLL.bz2
+-rw-rw-r--  1 phhofm phhofm 1828394 Okt  6 14:35 MSO97.DLL.csa
+-rw-rw-r--  1 phhofm phhofm 1902244 Okt  6 14:35 MSO97.DLL.glza
+-rw-rw-r--  1 phhofm phhofm 2187940 Okt  6 14:34 MSO97.DLL.gz
+-rw-rw-r--  1 phhofm phhofm 2950916 Okt  6 14:34 MSO97.DLL.lz4
+-rw-r-----  1 phhofm phhofm 1864666 Okt  6 14:35 MSO97.DLL.lzt
+-rw-rw-r--  1 phhofm phhofm 1915711 Okt  6 14:35 MSO97.DLL.ppmd
+-rw-rw-r--  1 phhofm phhofm 1816656 Okt  6 14:35 MSO97.DLL.xz
+-rw-rw-r--  1 phhofm phhofm 2189534 Okt  6 14:34 MSO97.DLL.zlib
+-rw-rw-r--  1 phhofm phhofm 2117635 Okt  6 14:35 MSO97.DLL.zopfli
+-rw-rw-r--  1 phhofm phhofm 2303613 Okt  6 14:34 MSO97.DLL.zst
+min File:  /tmp/tmp63vya5bn/MSO97.DLL.xz
+min File size in bytes:  1816656
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:35 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:35 ..
+-rw-rw-r--  1 phhofm phhofm  667002 Okt  6 14:35 vcfiu.hlp__4121418.lzham
+-rw-rw-r--  1 phhofm phhofm  716321 Okt  6 14:35 vcfiu.hlp.balz
+-rw-rw-r--  1 phhofm phhofm  706235 Okt  6 14:35 vcfiu.hlp.brotli
+-rw-rw-r--  1 phhofm phhofm  641692 Okt  6 14:35 vcfiu.hlp.bsc
+-rw-rw-r--  1 phhofm phhofm  712716 Okt  6 14:35 vcfiu.hlp.bz2
+-rw-rw-r--  1 phhofm phhofm  714194 Okt  6 14:35 vcfiu.hlp.csa
+-rw-rw-r--  1 phhofm phhofm  695354 Okt  6 14:35 vcfiu.hlp.glza
+-rw-rw-r--  1 phhofm phhofm  839458 Okt  6 14:35 vcfiu.hlp.gz
+-rw-rw-r--  1 phhofm phhofm 1331347 Okt  6 14:35 vcfiu.hlp.lz4
+-rw-r-----  1 phhofm phhofm  673640 Okt  6 14:35 vcfiu.hlp.lzt
+-rw-rw-r--  1 phhofm phhofm  691699 Okt  6 14:35 vcfiu.hlp.ppmd
+-rw-rw-r--  1 phhofm phhofm  613092 Okt  6 14:35 vcfiu.hlp.xz
+-rw-rw-r--  1 phhofm phhofm  847585 Okt  6 14:35 vcfiu.hlp.zlib
+-rw-rw-r--  1 phhofm phhofm  795948 Okt  6 14:35 vcfiu.hlp.zopfli
+-rw-rw-r--  1 phhofm phhofm  841659 Okt  6 14:35 vcfiu.hlp.zst
+min File:  /tmp/tmp26mdv3wg/vcfiu.hlp.xz
+min File size in bytes:  613092
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:35 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:35 ..
+-rw-rw-r--  1 phhofm phhofm 1039742 Okt  6 14:35 rafale.bmp__4149414.lzham
+-rw-rw-r--  1 phhofm phhofm 1074566 Okt  6 14:35 rafale.bmp.balz
+-rw-rw-r--  1 phhofm phhofm 1135314 Okt  6 14:35 rafale.bmp.brotli
+-rw-rw-r--  1 phhofm phhofm  782132 Okt  6 14:35 rafale.bmp.bsc
+-rw-rw-r--  1 phhofm phhofm  890163 Okt  6 14:35 rafale.bmp.bz2
+-rw-rw-r--  1 phhofm phhofm 1153481 Okt  6 14:35 rafale.bmp.csa
+-rw-rw-r--  1 phhofm phhofm  982910 Okt  6 14:35 rafale.bmp.glza
+-rw-rw-r--  1 phhofm phhofm 1254753 Okt  6 14:35 rafale.bmp.gz
+-rw-rw-r--  1 phhofm phhofm 2317235 Okt  6 14:35 rafale.bmp.lz4
+-rw-r-----  1 phhofm phhofm 1024005 Okt  6 14:35 rafale.bmp.lzt
+-rw-rw-r--  1 phhofm phhofm  780727 Okt  6 14:35 rafale.bmp.ppmd
+-rw-rw-r--  1 phhofm phhofm  976448 Okt  6 14:35 rafale.bmp.xz
+-rw-rw-r--  1 phhofm phhofm 1261662 Okt  6 14:35 rafale.bmp.zlib
+-rw-rw-r--  1 phhofm phhofm 1140303 Okt  6 14:35 rafale.bmp.zopfli
+-rw-rw-r--  1 phhofm phhofm 1357980 Okt  6 14:35 rafale.bmp.zst
+min File:  /tmp/tmp0em2u5wz/rafale.bmp.ppmd
+min File size in bytes:  780727
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:35 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:35 ..
+-rw-rw-r--  1 phhofm phhofm  923525 Okt  6 14:35 english.dic__4067439.lzham
+-rw-rw-r--  1 phhofm phhofm  863791 Okt  6 14:35 english.dic.balz
+-rw-rw-r--  1 phhofm phhofm 1048240 Okt  6 14:35 english.dic.brotli
+-rw-rw-r--  1 phhofm phhofm 1183780 Okt  6 14:35 english.dic.bsc
+-rw-rw-r--  1 phhofm phhofm 1221689 Okt  6 14:35 english.dic.bz2
+-rw-rw-r--  1 phhofm phhofm  925328 Okt  6 14:35 english.dic.csa
+-rw-rw-r--  1 phhofm phhofm  928125 Okt  6 14:35 english.dic.glza
+-rw-rw-r--  1 phhofm phhofm 1049608 Okt  6 14:35 english.dic.gz
+-rw-rw-r--  1 phhofm phhofm 1952339 Okt  6 14:35 english.dic.lz4
+-rw-r-----  1 phhofm phhofm  876038 Okt  6 14:35 english.dic.lzt
+-rw-rw-r--  1 phhofm phhofm 1028120 Okt  6 14:35 english.dic.ppmd
+-rw-rw-r--  1 phhofm phhofm  851628 Okt  6 14:35 english.dic.xz
+-rw-rw-r--  1 phhofm phhofm 1049443 Okt  6 14:35 english.dic.zlib
+-rw-rw-r--  1 phhofm phhofm  887932 Okt  6 14:35 english.dic.zopfli
+-rw-rw-r--  1 phhofm phhofm 1246393 Okt  6 14:35 english.dic.zst
+min File:  /tmp/tmpj9ie92hn/english.dic.xz
+min File size in bytes:  851628
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:35 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:35 ..
+-rw-rw-r--  1 phhofm phhofm  921633 Okt  6 14:36 FP.LOG__20617071.lzham
+-rw-rw-r--  1 phhofm phhofm  710813 Okt  6 14:36 FP.LOG.balz
+-rw-rw-r--  1 phhofm phhofm  893851 Okt  6 14:36 FP.LOG.brotli
+-rw-rw-r--  1 phhofm phhofm  528192 Okt  6 14:36 FP.LOG.bsc
+-rw-rw-r--  1 phhofm phhofm  723415 Okt  6 14:36 FP.LOG.bz2
+-rw-rw-r--  1 phhofm phhofm 1043598 Okt  6 14:36 FP.LOG.csa
+-rw-rw-r--  1 phhofm phhofm  508262 Okt  6 14:36 FP.LOG.glza
+-rw-rw-r--  1 phhofm phhofm 1333132 Okt  6 14:36 FP.LOG.gz
+-rw-rw-r--  1 phhofm phhofm 2368379 Okt  6 14:35 FP.LOG.lz4
+-rw-r-----  1 phhofm phhofm  732244 Okt  6 14:36 FP.LOG.lzt
+-rw-rw-r--  1 phhofm phhofm  659868 Okt  6 14:36 FP.LOG.ppmd
+-rw-rw-r--  1 phhofm phhofm  842004 Okt  6 14:36 FP.LOG.xz
+-rw-rw-r--  1 phhofm phhofm 1449455 Okt  6 14:35 FP.LOG.zlib
+-rw-rw-r--  1 phhofm phhofm 1258260 Okt  6 14:37 FP.LOG.zopfli
+-rw-rw-r--  1 phhofm phhofm 1365597 Okt  6 14:35 FP.LOG.zst
+min File:  /tmp/tmpurlbzgo5/FP.LOG.glza
+min File size in bytes:  508262
+
+drwx------  2 phhofm phhofm    4096 Okt  6 14:37 .
+drwxrwxrwt 31 root   root     16384 Okt  6 14:37 ..
+-rw-rw-r--  1 phhofm phhofm 1501616 Okt  6 14:37 AcroRd32.exe__3870784.lzham
+-rw-rw-r--  1 phhofm phhofm 1477648 Okt  6 14:37 AcroRd32.exe.balz
+-rw-rw-r--  1 phhofm phhofm 1644087 Okt  6 14:37 AcroRd32.exe.brotli
+-rw-rw-r--  1 phhofm phhofm 1605468 Okt  6 14:37 AcroRd32.exe.bsc
+-rw-rw-r--  1 phhofm phhofm 1699590 Okt  6 14:37 AcroRd32.exe.bz2
+-rw-rw-r--  1 phhofm phhofm 1348393 Okt  6 14:37 AcroRd32.exe.csa
+-rw-rw-r--  1 phhofm phhofm 1552739 Okt  6 14:37 AcroRd32.exe.glza
+-rw-rw-r--  1 phhofm phhofm 1728149 Okt  6 14:37 AcroRd32.exe.gz
+-rw-rw-r--  1 phhofm phhofm 2443192 Okt  6 14:37 AcroRd32.exe.lz4
+-rw-r-----  1 phhofm phhofm 1434485 Okt  6 14:37 AcroRd32.exe.lzt
+-rw-rw-r--  1 phhofm phhofm 1541891 Okt  6 14:37 AcroRd32.exe.ppmd
+-rw-rw-r--  1 phhofm phhofm 1406152 Okt  6 14:37 AcroRd32.exe.xz
+-rw-rw-r--  1 phhofm phhofm 1732407 Okt  6 14:37 AcroRd32.exe.zlib
+-rw-rw-r--  1 phhofm phhofm 1662377 Okt  6 14:37 AcroRd32.exe.zopfli
+-rw-rw-r--  1 phhofm phhofm 1822497 Okt  6 14:37 AcroRd32.exe.zst
+min File:  /tmp/tmpcnkim7lh/AcroRd32.exe.csa
+min File size in bytes:  1348393
+
+Archive Size: 11735040
+Program Execution Time (PET):  180.55 seconds
+
+
+-------- short testsystem info ------
+OS Ubuntu 20.04.3 LTS, 64-bit
+Processor: Intel® Core™ i9-7900X CPU @ 3.30GHz × 20
+RAM 62.5 GiB
+GPU: NVIDIA Corporation GM107 [GeForce GTX 750 Ti]

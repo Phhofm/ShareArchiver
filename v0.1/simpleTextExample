@@ -1,0 +1,24 @@
+Simple Test Example
+
+Use the Single File Ubuntu 18 Flavor found in /executable/singlefile/Ubuntu18
+
+Put that share file there into an empty directory
+
+Create a subdirectory there with the name "test"
+
+Put into the "test" directory whatever files you want to have compressed
+
+Open the terminal in that directory
+
+execute this command:
+./share compress test test
+
+This will create a test.share file in this directory (the first argument after compress being the file name, second the folder to compress)
+
+To decompress, first rename the subdirectory to test_old or remove completely.
+Then execute this command
+./share decompress test.share .
+
+This will create the subdirectory "test" again with the decompressed files.
+
+The first agrument is the share archive, the second is the output directory path. It wil create a subdirectory in it with the name of the archive as folder name. (If it already exists, share will abort and put out a warning. I did not want share to possibly overwrite any existing files)

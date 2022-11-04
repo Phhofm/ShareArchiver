@@ -1,0 +1,36 @@
+Decompressing world95.pcf.bsc ...
+Decompressing ohs.pcf.xz ...
+Decompressing AcroRd32.pcf.csa ...
+Decompressing english.pcf.lzt ...
+Decompressing FlashMX.pcf.lzt ...
+Decompressing FP.pcf.glza ...
+Decompressing rafale.pcf.bsc ...
+Decompressing MSO97.pcf.csa ...
+Decompressing vcfiu.pcf.lzt ...
+Decompressing A10.pcf.brotli ...
+
+Strong Profile, with Precomp:
+3 LZT
+2 BSC
+2 CSA
+1 XZ
+1 GLZA
+1 Brotli
+
+- keep original files and compressed files
+
+- create an arraylist for each compressor where you just add filepaths to original files
+- create an arraylist for each compressor with filepaths to compressed files
+
+- if arraylist of a compressor contains only a single entry -> remove original file
+- if arraylist of a compressor contains multiple entries:
+	1. Remove all compressed files (iterate thorugh arraylist of compressed filepaths for that compressor)
+	2. Compress all entries in arraylist of original files in that compressorarraylist together into a single file (most compressors have the option to give as input multiple files like lzturbo -c file1 file2 file3 ... (i think)) this might take care of inter-file redundancy since those compressors might handle them. call the archive 'multiple' and place it somewhere, like outside of original data, like in root together with the json file, well just to avoid file clashes like if there is some 'multiple.xz' file in the root folder of the input data already for some reason. But yea for decompression, we can then iterate thorugh those 'multiple' archives and unpack all of them too, be sure to restore original filepath (subfolders etc). I mean since we already have the code, we can just append the 'multiple' archives extraction in the code. So it will extract them after extracting the single files.
+	3. Remove all entries in the original file arraylist of that compressor
+Do this for every arraylist of each compressor
+
+For decompression:
+Decompress normally as already
+Append code to decompress those 'multiple' archives, preserving the correst folder/file structure. Let it run before precompress runs on all files of course.
+
+Test it out and ask in forum if that helps with inter-file redundancy. I changes the approach so it basically finds the compressors best suited for these files, and them compresses these files all together with that specific compressor in one command, so if that compressor handles inter-file redundancy it should be handled at least for these files assigned to that compressor. I am a newbie, so I dont know if this approach helps with that addressed problem or not. I also dont know how to do it in another way yet. Dont think this application will make it to something serious since there are great applications out there and tested and made by experts, and my contribution is minimal and I am a newbie, but currently it is fun for me to work on it, try this approach out, learning things :) So it is just a little hobby project for me :)

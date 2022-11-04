@@ -1,0 +1,24 @@
+{
+	"application": "Share Archiver",
+	"version": "0.1",
+	"author": "Philip Hofmann",
+	"compressors": [
+		"zlib",
+		"bz2",
+		"xz",
+		"gz",
+		"zst",
+		"ppmd",
+		"lz4",
+		"brotli",
+		"lzham",
+		"zopfli",
+		"lzt",
+		"glza",
+		"balz",
+		"bsc",
+		"csa",
+		"nncp",
+		"zpaq"
+	]
+}

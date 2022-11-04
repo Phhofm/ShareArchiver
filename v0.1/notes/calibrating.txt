@@ -1,0 +1,60 @@
+zopfli calibrating numiterations silesia:ooffice file
+
+They suggest on docu different values. But i am optimizing size with fast decompression, not compression speeds:
+
+5:
+6152192 --> 2992712 ooffice.zopfli
+Program Execution Time (PET):  9.81 seconds
+
+15:
+6152192 --> 2992119 ooffice.zopfli
+Program Execution Time (PET):  15.56 seconds
+
+25:
+6152192 --> 2992056 ooffice.zopfli
+Program Execution Time (PET):  21.46 seconds
+
+50:
+6152192 --> 2991918 ooffice.zopfli
+Program Execution Time (PET):  35.55 seconds
+
+100:
+6152192 --> 2991701 ooffice.zopfli
+Program Execution Time (PET):  63.53 seconds
+
+200:
+6152192 --> 2991640 ooffice.zopfli
+Program Execution Time (PET):  119.2 seconds
+
+1000:
+6152192 --> 2991464 ooffice.zopfli
+Program Execution Time (PET):  573.94 seconds
+
+...
+Where is the end to incresing computational cost = smaller file size?
+Such which value should I choose? I am optimizing for decompression and size not compression time, but a compressor that never finishes (on strong settings) also is of no practical value.
+First time I encounter an unlimited range compression level setting for a compressor. hm.
+What value should one choose here?
+
+
+glza ooffice
+-x
+6152192 --> 2492198 ooffice.glza
+Program Execution Time (PET):  16.04 seconds
+
+-x -p0.0
+6152192 --> 2495065 ooffice.glza
+Program Execution Time (PET):  14.12 seconds
+
+-x -p3
+6152192 --> 2515226 ooffice.glza
+Program Execution Time (PET):  27.41 seconds
+
+-x -p10
+6152192 --> 2554776 ooffice.glza
+Program Execution Time (PET):  41.53 seconds
+
+ill just take -x alone
+
+
+
